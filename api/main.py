@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
 import random
 from enum import Enum
 from fastapi import FastAPI, HTTPException
@@ -6,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from starlette.status import HTTP_409_CONFLICT
 import logging
+from os import environ
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,10 +40,12 @@ class WorkoutManager:
 
         self._load_workouts()
 
-    def _get_workouts_file_path(self, type: WorkoutType):
-        return f"workouts/{type.name}"
+    def _get_workouts_file_path(self, type: WorkoutType) -> Path:
+        path = Path(f"workouts/{type.name}")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        return path
 
-    def _load_workouts(self):
+    def _load_workouts(self) -> None:
         for workout_type in WorkoutType:
             with open(self._get_workouts_file_path(workout_type), "a+") as f:
                 f.seek(0)
@@ -50,23 +54,27 @@ class WorkoutManager:
                     workout = workout.strip()
                     self.loaded_workouts[workout_type].append(workout)
 
-    def reload(self):
+    def reload(self) -> None:
         self._load_workouts
 
     def get_routine(self) -> Routine:
-        routine = dict(workouts=[])
+        workouts = []
         for workout_type in WorkoutType:
-            workouts = self.loaded_workouts[workout_type]
-            workout = dict(
-                type=WorkoutTypeObject.model_validate(
-                    {"id": str(workout_type.value), "name": workout_type.name}
-                ),
-                exercise=random.choice(workouts) if workouts else "",
+            available_workouts = self.loaded_workouts[workout_type]
+            workouts.append(
+                Workout(
+                    exercise=random.choice(available_workouts)
+                    if available_workouts
+                    else "",
+                    type=WorkoutTypeObject(
+                        id=str(workout_type.value), name=workout_type.name
+                    ),
+                )
             )
-            routine["workouts"].append(Workout.model_validate(workout))
-        return Routine.model_validate(routine)
 
-    def add_workout(self, type: WorkoutType, name: str):
+        return Routine(workouts=workouts)
+
+    def add_workout(self, type: WorkoutType, name: str) -> None:
         if name in self.loaded_workouts[type]:
             raise ValueError("This workout already exists")
 
@@ -74,7 +82,7 @@ class WorkoutManager:
         with open(self._get_workouts_file_path(type), "a") as f:
             f.write(name + "\n")
 
-    def save(self):
+    def save(self) -> None:
         for workout_type in WorkoutType:
             with open(self._get_workouts_file_path(workout_type), "w") as f:
                 f.writelines(
@@ -97,7 +105,10 @@ app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"],
+    allow_origins=[
+        f"http://{environ['CLIENT_HOSTNAME']}:{environ['CLIENT_PORT']}",
+        f"https://{environ['CLIENT_HOSTNAME']}:{environ['CLIENT_PORT']}",
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

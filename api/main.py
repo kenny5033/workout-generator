@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from starlette.status import HTTP_409_CONFLICT
 import logging
 from os import environ
+from fastapi import Request
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -103,13 +104,30 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+supported_cors_protocols = [
+    "http",
+    "https",
+]
+supported_cors_domains = [
+    environ.get("CLIENT_ORIGIN_DOMAIN") or "localhost:5000",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[environ.get("CLIENT_ORIGIN") or "http://localhost:5000"],
+    allow_origins=[
+        f"{protocol}://{domain}"
+        for protocol in supported_cors_protocols
+        for domain in supported_cors_domains
+    ],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.middleware("http")
+async def log_origin(request: Request, call_next):
+    print("ORIGIN:", request.headers.get("origin"))
+    return await call_next(request)
 
 
 @app.get("/")

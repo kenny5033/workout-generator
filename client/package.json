@@ -5,7 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"gen": "openapi-generator-cli generate -i http://localhost:8888/openapi.json -g typescript-fetch -o ./src/lib/gen/openapi",
+		"build": "vite build && npm run gen",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -17,6 +18,7 @@
 	},
 	"devDependencies": {
 		"@chromatic-com/storybook": "^5.0.1",
+		"@openapitools/openapi-generator-cli": "^2.30.2",
 		"@storybook/addon-a11y": "^10.2.14",
 		"@storybook/addon-docs": "^10.2.14",
 		"@storybook/addon-svelte-csf": "^5.0.11",
@@ -37,5 +39,8 @@
 		"typescript": "^5.9.3",
 		"vite": "^7.3.1",
 		"vitest": "^4.0.18"
+	},
+	"dependencies": {
+		"whatwg-fetch": "^3.6.20"
 	}
 }

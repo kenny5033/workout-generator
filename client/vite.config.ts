@@ -11,6 +11,9 @@ const dirname =
 // More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
 	plugins: [sveltekit()],
+	server: {
+		port: 5000
+	},
 	test: {
 		projects: [
 			{

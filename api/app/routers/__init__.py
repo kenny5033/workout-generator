@@ -1,3 +1,4 @@
+from typing import Sequence
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
@@ -27,6 +28,12 @@ async def root() -> Routine:
                 routine.workouts.append(workout)
 
         return routine
+
+
+@router.get("/workout_types")
+async def workout_types() -> Sequence[WorkoutType]:
+    with Session(engine) as session:
+        return session.exec(select(WorkoutType)).all()
 
 
 @router.post("/add/")

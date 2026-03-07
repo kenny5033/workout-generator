@@ -1,2 +1,3 @@
 workouts/*
 __pycache__
+*.db

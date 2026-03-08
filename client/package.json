@@ -5,8 +5,9 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"gen": "openapi-generator-cli generate -i http://localhost:8888/openapi.json -g typescript-fetch -o ./src/lib/gen/openapi",
-		"build": "vite build && npm run gen",
+		"lock": "curl localhost:8888/openapi.json -o api_schema.json.lock",
+		"gen": "openapi-generator-cli generate -i api_schema.json.lock -g typescript-fetch -o ./src/lib/gen/openapi",
+		"build": "vite build",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
